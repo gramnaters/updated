@@ -1,0 +1,9 @@
+8344012762|andrew||http://sub_crypto_1t4by0jb4g9i6pkhqvtmzyhv:stat382@87.248.148.1:3128|1772815572
+8344012762|andrew||http://sub_crypto_1t4by0jb4g9i6pkhqvtmzyhv:stat382@87.248.148.166:3128|1772815573
+8344012762|andrew||http://sub_crypto_1t4by0jb4g9i6pkhqvtmzyhv:stat382@31.193.191.114:3128|1772815575
+8344012762|andrew||http://sub_crypto_1t4by0jb4g9i6pkhqvtmzyhv:stat382@31.193.191.115:3128|1772815576
+8344012762|andrew||http://sub_crypto_1t4by0jb4g9i6pkhqvtmzyhv:stat382@31.193.191.116:3128|1772815578
+8344012762|andrew||http://sub_crypto_1t4by0jb4g9i6pkhqvtmzyhv:stat382@193.36.187.169:3128|1772815580
+8344012762|andrew||http://sub_crypto_1t4by0jb4g9i6pkhqvtmzyhv:stat382@193.36.187.170:3128|1772815581
+8344012762|andrew||http://sub_crypto_1t4by0jb4g9i6pkhqvtmzyhv:stat382@193.36.187.171:3128|1772815583
+8344012762|andrew||http://sub_crypto_1t4by0jb4g9i6pkhqvtmzyhv:stat382@87.248.148.2:3128|1772815584
