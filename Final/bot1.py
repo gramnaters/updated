@@ -465,8 +465,8 @@ def result_notify_text(card: Dict, status: str, code_display: str, amount_displa
     if isinstance(amount_display, str) and amount_display.strip():
         parts.append(f"💰 <b>Amount:</b> <code>{amount_display.strip()}</code>")
 
-    # Add receipt ID for approved and charged cards
-    if receipt_id and isinstance(receipt_id, str) and receipt_id.strip() and status in ("approved", "charged"):
+    # Add receipt ID
+    if receipt_id and isinstance(receipt_id, str) and receipt_id.strip():
         parts.append(f"🧾 <b>Receipt:</b> <code>{receipt_id.strip()}</code>")
 
     # Add user info with clickable link
