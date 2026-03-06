@@ -328,18 +328,23 @@ def parse_cards_from_file(file_path: str) -> List[Dict]:
     except Exception:
         return []
 
-def progress_block(total: int, processed: int, approved: int, declined: int, charged: int, start_ts: float) -> str:
+def progress_block(total: int, processed: int, approved: int, declined: int, charged: int, start_ts: float, captcha: int = 0) -> str:
     elapsed = time.time() - (start_ts or time.time())
-    return (
-        f"🐢Total CC     : {total}\n"
-        f"💬 Progress     : {processed}/{total}\n"
-        f"✅  Approved    : {approved}\n"
-        f"❌Declined     :  {declined}\n"
-        f"💎 Charged     :  {charged}  \n"
-        f" Time Elapsed : {elapsed:.2f}s ⏱️\n"
-        f"━━━━━━━━━━━━━\n"
-        f"⌥ Dev: @LeVetche"
-    )
+    lines = [
+        f"🐢Total CC     : {total}",
+        f"💬 Progress     : {processed}/{total}",
+        f"✅  Approved    : {approved}",
+        f"❌Declined     :  {declined}",
+        f"💎 Charged     :  {charged}  ",
+    ]
+    if captcha > 0:
+        lines.append(f"⚠️ CAPTCHA     :  {captcha}")
+    lines += [
+        f" Time Elapsed : {elapsed:.2f}s ⏱️",
+        f"━━━━━━━━━━━━━",
+        f"⌥ Dev: @LeVetche",
+    ]
+    return "\n".join(lines)
 
 def format_site_label(url: str) -> str:
     import neww as checkout
@@ -353,6 +358,8 @@ def classify_prefix(code_display: str) -> str:
     u = str(code_display or "").upper()
     if u == "SUCCESS":
         return "charged"
+    if "CAPTCHA" in u:
+        return "captcha"
     if ('"ACTION_REQUIRED"' in u) or ('ACTION_REQUIRED' in u) or ('3D' in u):
         return "approved"
     approved_tokens = (
@@ -383,6 +390,7 @@ def classify_prefix(code_display: str) -> str:
     return "declined"
 
 def result_notify_text(card: Dict, status: str, code_display: str, amount_display: Optional[str] = None, site_label: Optional[str] = None, user_info: Optional[str] = None, receipt_id: Optional[str] = None, user_id: Optional[int] = None) -> str:
+    import re as _re
     pan = str(card.get("number", "") or "")
     mm = int(card.get("month", 0) or 0)
     yy = int(card.get("year", 0) or 0)
@@ -390,73 +398,70 @@ def result_notify_text(card: Dict, status: str, code_display: str, amount_displa
     mm_str = f"{mm:02d}"
     yy_str = f"{yy % 100:02d}"
 
-    # Enhanced status emojis and formatting
     if status == "charged":
-        status_emoji = "💎"
-        status_title = "CHARGED"
-        status_color = "🟢"
+        header = "🟢 CHARGED 💎"
     elif status == "approved":
-        # Check for 3D (ACTION_REQUIRED or 3D in code)
         code_upper = (code_display or "").upper()
-        is_3d = "3D" in code_upper or "ACTION_REQUIRED" in code_upper
-
-        # Check for Shopify (in site_label)
-        is_shopify = False
-        if isinstance(site_label, str) and site_label.strip():
-            site_lower = site_label.lower()
-            is_shopify = "shopify" in site_lower or "myshopify" in site_lower
-
-        # Determine emoji based on conditions
-        if is_3d:
-            status_emoji = "🔐"
-            status_title = "APPROVED (3D)"
-        elif is_shopify:
-            status_emoji = "❎"
-            status_title = "APPROVED (Shopify)"
+        if "ACTION_REQUIRED" in code_upper or "3D" in code_upper:
+            header = "🟡 APPROVED (3D) 🔐"
         else:
-            status_emoji = "✅"
-            status_title = "APPROVED"
-        status_color = "🟡"
+            header = "🟢 APPROVED ✅"
+    elif status in ("captcha", "unknown"):
+        header = "⚠️ UNKNOWN"
     else:
-        status_emoji = "❌"
-        status_title = "DECLINED"
-        status_color = "🔴"
+        header = "❌ DECLINED"
 
-    # Build beautiful notification message
-    parts = [
-        f"{status_color} <b>{status_title} {status_emoji}</b>",
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-        f"💳 <b>Card:</b> <code>{pan}|{mm_str}|{yy_str}|{cvv}</code>"
-    ]
+    raw_mm = str(mm)
+    raw_yy = str(yy) if yy >= 2000 else str(yy + 2000)
+    card_line = f"{pan}|{raw_mm}|{raw_yy}|{cvv}"
+
+    bin_line = ""
+    country_line = ""
+    try:
+        import neww as checkout
+        bin_str, country_str = checkout.get_bin_line(pan)
+        if bin_str:
+            bin_line = bin_str.split("BIN: ", 1)[-1].strip()
+        if country_str:
+            country_line = country_str.split("Country: ", 1)[-1].strip()
+    except Exception:
+        pass
+
+    if status in ("captcha", "unknown"):
+        amt = "$0"
+    else:
+        amt = amount_display.strip() if isinstance(amount_display, str) and amount_display.strip() else "$0"
 
     if status == "charged":
-        parts.append('🔐 <b>Code:</b> <code>ProcessedReceipt</code>')
+        code_line = "ProcessedReceipt"
     else:
-        code_upper = (code_display or "").upper()
-        if "ACTION_REQUIRED" in code_upper and status == "approved":
-            parts.append(f'🔐 <b>Code:</b> <code>{code_display}</code>')
-        else:
-            parts.append(f'🔐 <b>Code:</b> <code>{code_display}</code>')
+        code_line = code_display or ""
 
-    if isinstance(site_label, str) and site_label.strip():
-        parts.append(f"🌐 <b>Site:</b> <code>{site_label.strip()}</code>")
+    site = site_label or ""
+    user_display = user_info or ""
 
-    if isinstance(amount_display, str) and amount_display.strip():
-        parts.append(f"💰 <b>Amount:</b> <code>{amount_display.strip()}</code>")
-
-    # Add receipt ID for approved and charged cards
-    if receipt_id and isinstance(receipt_id, str) and receipt_id.strip() and status in ("approved", "charged"):
-        parts.append(f"🧾 <b>Receipt:</b> <code>{receipt_id.strip()}</code>")
-
-    # Add user info with clickable link
-    if isinstance(user_info, str) and user_info.strip():
-        if user_id:
-            # Create clickable link
-            user_link = f'<a href="tg://user?id={user_id}">{user_info.strip()}</a>'
-            parts.append(f"👤 <b>User:</b> {user_link}")
-        else:
-            # Fallback to plain text if no user_id
-            parts.append(f"👤 <b>User:</b> <code>{user_info.strip()}</code>")
-
-    parts.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    return "\n".join(parts)
+    if status in ("approved", "charged"):
+        parts = [
+            header,
+            "______________________________",
+            f"💳 Card: {card_line}",
+            f"🏦 BIN: {bin_line}" if bin_line else None,
+            f"🌍 Country: {country_line}" if country_line else None,
+            f"🔑 Code: {code_line}",
+            f"🏪 Site: {site}" if site else None,
+            f"💰 Amount: {amt}",
+            f"🧾 Receipt: {receipt_id}" if receipt_id else None,
+            f"👤 User: {user_display}" if user_display else None,
+        ]
+        return "\n".join(p for p in parts if p is not None)
+    else:
+        parts = [header, card_line]
+        if bin_line:
+            parts.append(bin_line)
+        if country_line:
+            parts.append(country_line)
+        parts.append(f"Code: {code_line}")
+        parts.append(f"Amount: {amt}")
+        if receipt_id:
+            parts.append(f"Receipt: {receipt_id}")
+        return "\n".join(parts)

@@ -1758,7 +1758,7 @@ class BatchRunner:
 
     async def run(self, update: Update, context: ContextTypes.DEFAULT_TYPE, title: str):
         progress_msg = await update.effective_chat.send_message(
-            text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts),
+            text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts, self.captcha),
             parse_mode=ParseMode.HTML,
             disable_web_page_preview=True,
             reply_markup=self.stop_keyboard(),
@@ -1812,7 +1812,7 @@ class BatchRunner:
                         await context.bot.edit_message_text(
                             chat_id=progress_msg.chat_id,
                             message_id=progress_msg.message_id,
-                            text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts),
+                            text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts, self.captcha),
                             parse_mode=ParseMode.HTML,
                             disable_web_page_preview=True,
                         )
@@ -1887,7 +1887,7 @@ class BatchRunner:
     async def run_with_notifications(self, update: Update, context: ContextTypes.DEFAULT_TYPE, title: str):
         try:
             progress_msg = await update.effective_chat.send_message(
-                text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts),
+                text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts, self.captcha),
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=True,
                 reply_markup=self.stop_keyboard(),
@@ -1899,7 +1899,7 @@ class BatchRunner:
                     logger.warning(f"Flood control hit on initial message, waiting {retry_after} seconds")
                     await asyncio.sleep(retry_after)
                     progress_msg = await update.effective_chat.send_message(
-                        text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts),
+                        text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts, self.captcha),
                         parse_mode=ParseMode.HTML,
                         disable_web_page_preview=True,
                         reply_markup=self.stop_keyboard(),
@@ -2613,7 +2613,7 @@ class BatchRunner:
                             await context.bot.edit_message_text(
                                 chat_id=progress_msg.chat_id,
                                 message_id=progress_msg.message_id,
-                                text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts),
+                                text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts, self.captcha),
                                 parse_mode=ParseMode.HTML,
                                 disable_web_page_preview=True,
                                 reply_markup=self.stop_keyboard(),
@@ -2630,7 +2630,7 @@ class BatchRunner:
                                         await context.bot.edit_message_text(
                                             chat_id=progress_msg.chat_id,
                                             message_id=progress_msg.message_id,
-                                            text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts),
+                                            text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts, self.captcha),
                                             parse_mode=ParseMode.HTML,
                                             disable_web_page_preview=True,
                                             reply_markup=self.stop_keyboard(),
@@ -2740,7 +2740,7 @@ class BatchRunner:
                 await context.bot.edit_message_text(
                     chat_id=progress_msg.chat_id,
                     message_id=progress_msg.message_id,
-                    text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts),
+                    text=progress_block(self.total, self.processed, self.approved, self.declined, self.charged, self.start_ts, self.captcha),
                     parse_mode=ParseMode.HTML,
                     disable_web_page_preview=True,
                     reply_markup=None,
