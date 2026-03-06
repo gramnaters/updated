@@ -390,7 +390,6 @@ def classify_prefix(code_display: str) -> str:
     return "declined"
 
 def result_notify_text(card: Dict, status: str, code_display: str, amount_display: Optional[str] = None, site_label: Optional[str] = None, user_info: Optional[str] = None, receipt_id: Optional[str] = None, user_id: Optional[int] = None) -> str:
-    import re as _re
     pan = str(card.get("number", "") or "")
     mm = int(card.get("month", 0) or 0)
     yy = int(card.get("year", 0) or 0)
@@ -398,23 +397,39 @@ def result_notify_text(card: Dict, status: str, code_display: str, amount_displa
     mm_str = f"{mm:02d}"
     yy_str = f"{yy % 100:02d}"
 
+    # Enhanced status emojis and formatting
     if status == "charged":
-        header = "🟢 CHARGED 💎"
+        status_emoji = "💎"
+        status_title = "CHARGED"
+        status_color = "🟢"
     elif status == "approved":
+        # Check for 3D (ACTION_REQUIRED or 3D in code)
         code_upper = (code_display or "").upper()
-        if "ACTION_REQUIRED" in code_upper or "3D" in code_upper:
-            header = "🟡 APPROVED (3D) 🔐"
+        is_3d = "3D" in code_upper or "ACTION_REQUIRED" in code_upper
+
+        # Check for Shopify (in site_label)
+        is_shopify = False
+        if isinstance(site_label, str) and site_label.strip():
+            site_lower = site_label.lower()
+            is_shopify = "shopify" in site_lower or "myshopify" in site_lower
+
+        # Determine emoji based on conditions
+        if is_3d:
+            status_emoji = "🔐"
+            status_title = "APPROVED (3D)"
+        elif is_shopify:
+            status_emoji = "❎"
+            status_title = "APPROVED (Shopify)"
         else:
-            header = "🟢 APPROVED ✅"
-    elif status in ("captcha", "unknown"):
-        header = "⚠️ UNKNOWN"
+            status_emoji = "✅"
+            status_title = "APPROVED"
+        status_color = "🟡"
     else:
-        header = "❌ DECLINED"
+        status_emoji = "❌"
+        status_title = "DECLINED"
+        status_color = "🔴"
 
-    raw_mm = str(mm)
-    raw_yy = str(yy) if yy >= 2000 else str(yy + 2000)
-    card_line = f"{pan}|{raw_mm}|{raw_yy}|{cvv}"
-
+    # BIN/Country lookup
     bin_line = ""
     country_line = ""
     try:
@@ -427,41 +442,40 @@ def result_notify_text(card: Dict, status: str, code_display: str, amount_displa
     except Exception:
         pass
 
-    if status in ("captcha", "unknown"):
-        amt = "$0"
-    else:
-        amt = amount_display.strip() if isinstance(amount_display, str) and amount_display.strip() else "$0"
+    # Build notification message
+    parts = [
+        f"{status_color} <b>{status_title} {status_emoji}</b>",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        f"💳 <b>Card:</b> <code>{pan}|{mm_str}|{yy_str}|{cvv}</code>"
+    ]
+
+    if bin_line:
+        parts.append(f"🏦 <b>BIN:</b> <code>{bin_line}</code>")
+    if country_line:
+        parts.append(f"🌍 <b>Country:</b> <code>{country_line}</code>")
 
     if status == "charged":
-        code_line = "ProcessedReceipt"
+        parts.append('🔐 <b>Code:</b> <code>ProcessedReceipt</code>')
     else:
-        code_line = code_display or ""
+        parts.append(f'🔐 <b>Code:</b> <code>{code_display}</code>')
 
-    site = site_label or ""
-    user_display = user_info or ""
+    if isinstance(site_label, str) and site_label.strip():
+        parts.append(f"🌐 <b>Site:</b> <code>{site_label.strip()}</code>")
 
-    if status in ("approved", "charged"):
-        parts = [
-            header,
-            "______________________________",
-            f"💳 Card: {card_line}",
-            f"🏦 BIN: {bin_line}" if bin_line else None,
-            f"🌍 Country: {country_line}" if country_line else None,
-            f"🔑 Code: {code_line}",
-            f"🏪 Site: {site}" if site else None,
-            f"💰 Amount: {amt}",
-            f"🧾 Receipt: {receipt_id}" if receipt_id else None,
-            f"👤 User: {user_display}" if user_display else None,
-        ]
-        return "\n".join(p for p in parts if p is not None)
-    else:
-        parts = [header, card_line]
-        if bin_line:
-            parts.append(bin_line)
-        if country_line:
-            parts.append(country_line)
-        parts.append(f"Code: {code_line}")
-        parts.append(f"Amount: {amt}")
-        if receipt_id:
-            parts.append(f"Receipt: {receipt_id}")
-        return "\n".join(parts)
+    if isinstance(amount_display, str) and amount_display.strip():
+        parts.append(f"💰 <b>Amount:</b> <code>{amount_display.strip()}</code>")
+
+    # Add receipt ID for approved and charged cards
+    if receipt_id and isinstance(receipt_id, str) and receipt_id.strip() and status in ("approved", "charged"):
+        parts.append(f"🧾 <b>Receipt:</b> <code>{receipt_id.strip()}</code>")
+
+    # Add user info with clickable link
+    if isinstance(user_info, str) and user_info.strip():
+        if user_id:
+            user_link = f'<a href="tg://user?id={user_id}">{user_info.strip()}</a>'
+            parts.append(f"👤 <b>User:</b> {user_link}")
+        else:
+            parts.append(f"👤 <b>User:</b> <code>{user_info.strip()}</code>")
+
+    parts.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(parts)
