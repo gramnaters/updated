@@ -43,8 +43,7 @@ def parse_cards_from_text(text: str) -> List[Dict]:
     import re
     
     cards = []
-    seen_cards = set()  # Track full card details we've already found
-    seen_pans = set()   # Track card numbers (PANs) to deduplicate same-number cards
+    seen_cards = set()  # Track card numbers we've already found
     text = text or ""
     
     # OPTIMIZATION: Fast path for well-formatted cards (most common case)
@@ -66,9 +65,8 @@ def parse_cards_from_text(text: str) -> List[Dict]:
                     year += 2000
                 
                 card_key = f"{number}|{month}|{year}|{cvv}"
-                if card_key not in seen_cards and number not in seen_pans:
+                if card_key not in seen_cards:
                     seen_cards.add(card_key)
-                    seen_pans.add(number)
                     cards.append({
                         'number': number,
                         'month': month,
@@ -88,9 +86,8 @@ def parse_cards_from_text(text: str) -> List[Dict]:
         card = checkout.parse_cc_line(line)
         if card:
             card_key = f"{card['number']}|{card['month']}|{card['year']}|{card['verification_value']}"
-            if card_key not in seen_cards and card['number'] not in seen_pans:
+            if card_key not in seen_cards:
                 seen_cards.add(card_key)
-                seen_pans.add(card['number'])
                 cards.append(card)
     
     # Only use multi-line extraction as last resort if we found very few cards
@@ -99,9 +96,8 @@ def parse_cards_from_text(text: str) -> List[Dict]:
         multi_line_cards = _extract_multiline_cards(text)
         for card in multi_line_cards:
             card_key = f"{card['number']}|{card['month']}|{card['year']}|{card['verification_value']}"
-            if card_key not in seen_cards and card['number'] not in seen_pans:
+            if card_key not in seen_cards:
                 seen_cards.add(card_key)
-                seen_pans.add(card['number'])
                 cards.append(card)
     
     return cards
