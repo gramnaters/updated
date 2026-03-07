@@ -446,7 +446,7 @@ def result_notify_text(card: Dict, status: str, code_display: str, amount_displa
         sep,
         f"💳 Card: {card_line}",
         f"🔐 Code: {code_line}",
-        f"🔰 BIN: {bin_line}" if bin_line else None,
+        f"🏦 BIN: {bin_line}" if bin_line else None,
         f"🌍 Country: {country_line}" if country_line else None,
         f"🌐 Site: {site}" if site else None,
         f"💰 Amount: {amt}",

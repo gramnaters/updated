@@ -1930,7 +1930,7 @@ def get_bin_line(card_number: str) -> str:
     info_str = " ".join(parts)
     if bank:
         info_str = f"{info_str} - {bank}" if info_str else bank
-    bin_str = f"\U0001f530 BIN: {bin6} {info_str}" if info_str else ""
+    bin_str = f"\U0001f3e6 BIN: {bin6} {info_str}" if info_str else ""
 
     # Prefer country_flag from API, fallback to COUNTRY_FLAGS lookup
     flag = b.get("country_flag", "")
