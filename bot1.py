@@ -440,16 +440,18 @@ def result_notify_text(card: Dict, status: str, code_display: str, amount_displa
     site = site_label or ""
     user_display = user_info or ""
 
+    sep = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     parts = [
         header,
-        "______________________________",
+        sep,
         f"💳 Card: {card_line}",
-        f"🏦 BIN: {bin_line}" if bin_line else None,
+        f"🔐 Code: {code_line}",
+        f"🔰 BIN: {bin_line}" if bin_line else None,
         f"🌍 Country: {country_line}" if country_line else None,
-        f"🔑 Code: {code_line}",
-        f"🏪 Site: {site}" if site else None,
+        f"🌐 Site: {site}" if site else None,
         f"💰 Amount: {amt}",
         f"🧾 Receipt: {receipt_id}" if receipt_id else None,
         f"👤 User: {user_display}" if user_display else None,
+        sep,
     ]
     return "\n".join(p for p in parts if p is not None)

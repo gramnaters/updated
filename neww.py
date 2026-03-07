@@ -1918,6 +1918,7 @@ def get_bin_line(card_number: str) -> str:
     b = lookup_bin(card_number)
     if not b:
         return "", ""
+    bin6 = str(card_number or "")[:6]
     parts = []
     if b.get("brand"):
         parts.append(b["brand"])
@@ -1925,16 +1926,18 @@ def get_bin_line(card_number: str) -> str:
         parts.append(b["type"])
     if b.get("level"):
         parts.append(b["level"])
-    if b.get("bank"):
-        parts.append(b["bank"])
-    bin_str = f"\U0001f3e6 BIN: {' - '.join(parts)}" if parts else ""
-    
+    bank = b.get("bank", "")
+    info_str = " ".join(parts)
+    if bank:
+        info_str = f"{info_str} - {bank}" if info_str else bank
+    bin_str = f"\U0001f530 BIN: {bin6} {info_str}" if info_str else ""
+
     # Prefer country_flag from API, fallback to COUNTRY_FLAGS lookup
     flag = b.get("country_flag", "")
     if not flag:
         cc = b.get("country_code", "")
         flag = COUNTRY_FLAGS.get(cc, "\U0001f310")
-    
+
     country_str = f"\U0001f30d Country: {flag} {b.get('country', '')}" if b.get("country") else ""
     return bin_str, country_str
 # ─── End BIN Lookup ──────────────────────────────────────────────────
