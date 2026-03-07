@@ -462,7 +462,7 @@ def result_notify_text(card: Dict, status: str, code_display: str, amount_displa
     elif isinstance(amount_display, str) and amount_display.strip():
         parts.append(f"💰 <b>Amount:</b> <code>{amount_display.strip()}</code>")
 
-    if receipt_id and isinstance(receipt_id, str) and receipt_id.strip() and status in ("approved", "charged"):
+    if receipt_id and isinstance(receipt_id, str) and receipt_id.strip():
         parts.append(f"🧾 <b>Receipt:</b> <code>{receipt_id.strip()}</code>")
 
     if isinstance(user_info, str) and user_info.strip():

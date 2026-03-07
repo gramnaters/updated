@@ -3699,9 +3699,13 @@ async def cmd_txt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         txt_path = context.chat_data.get("last_txt_path")
 
+    # Check proxy result
+    has_proxy = await proxy_check_task
+    if not has_proxy:
+        await update.message.reply_text("❌ <b>Proxy Required</b>\n\nPlease add a proxy first with /setpr", parse_mode=ParseMode.HTML)
+        return
+
     if not txt_path or not os.path.exists(txt_path):
-        # Still await proxy check to avoid dangling task
-        await proxy_check_task
         await update.message.reply_text("No .txt file found. Please send a .txt file and reply with /txt.")
         return
 
@@ -3724,32 +3728,6 @@ async def cmd_txt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # OPTIMIZATION: Use smart site selection based on health scores (ALL sites, just reordered)
     optimized_sites = get_optimized_sites(sites, min_health_score=30.0, max_sites=None)
     logger.info(f"[/txt] Optimized sites: {len(sites)} → {len(optimized_sites)}")
-
-    # Check proxy result — pause if no proxies instead of rejecting
-    has_proxy = await proxy_check_task
-    if not has_proxy:
-        batch_id_pause = f"{update.effective_chat.id}:{int(time.time())}"
-        try:
-            await add_pending(batch_id_pause, {
-                "batch_id": batch_id_pause,
-                "user_id": user.id,
-                "chat_id": update.effective_chat.id,
-                "title": "ShopifyCheck",
-                "cards": cards,
-                "sites": optimized_sites,
-                "send_approved_notifications": True,
-                "processed": 0
-            })
-        except Exception:
-            pass
-        await update.message.reply_text(
-            "⚠️ <b>No Proxies Available - Check Paused</b>\n\n"
-            "No proxies are available for this check.\n\n"
-            "<b>Add new proxies with /setpr to resume your check.</b>\n\n"
-            "Your progress has been saved.",
-            parse_mode=ParseMode.HTML
-        )
-        return
 
     context.chat_data["pending_cards"] = cards
     context.chat_data["pending_sites"] = optimized_sites
@@ -3984,6 +3962,15 @@ async def cmd_sh(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
     
+    try:
+        user_proxies = await get_user_proxies(user.id)
+        if not user_proxies:
+            await update.message.reply_text("❌ <b>Proxy Required</b>\n\nPlease add a proxy first with /setpr", parse_mode=ParseMode.HTML)
+            return
+    except Exception:
+        await update.message.reply_text("❌ <b>Proxy Required</b>\n\nPlease add a proxy first with /setpr", parse_mode=ParseMode.HTML)
+        return
+    
     full_text = (update.message.text or "").strip()
     body = ""
 
@@ -4081,34 +4068,6 @@ async def cmd_sh(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 pass
     except Exception:
         pass
-
-    # If no proxies at all (no saved + no inline), pause and save to pending
-    if not proxies_override and not proxy_candidate_raw:
-        batch_id_pause = f"{update.effective_chat.id}:{int(time.time())}"
-        try:
-            # Use optimized sites
-            optimized_sites = get_optimized_sites(sites, min_health_score=30.0, max_sites=None)
-            await add_pending(batch_id_pause, {
-                "batch_id": batch_id_pause,
-                "user_id": update.effective_user.id,
-                "chat_id": update.effective_chat.id,
-                "title": "ShopifyCheck",
-                "cards": cards,
-                "sites": optimized_sites,
-                "send_approved_notifications": True,
-                "processed": 0
-            })
-        except Exception:
-            pass
-        await update.message.reply_text(
-            "⚠️ <b>No Proxies Available - Check Paused</b>\n\n"
-            "No proxies are available for this check.\n\n"
-            "<b>Add new proxies with /setpr to resume your check.</b>\n\n"
-            "Your progress has been saved.",
-            parse_mode=ParseMode.HTML
-        )
-        return
-
     if proxy_candidate_raw:
         normalized_proxy = _normalize_proxy_url_inline(proxy_candidate_raw)
         if not normalized_proxy:
