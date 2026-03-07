@@ -90,9 +90,10 @@ def parse_cards_from_text(text: str) -> List[Dict]:
                 seen_cards.add(card_key)
                 cards.append(card)
     
-    # Only use multi-line extraction as last resort if we found very few cards
-    # This handles cases where card data is spread across multiple lines
-    if len(cards) < 5:  # If we found fewer than 5 cards, try aggressive extraction
+    # Only use multi-line extraction as absolute last resort if NO cards were found
+    # by the standard parsers. The aggressive extractor can create phantom cards
+    # by mixing data from nearby cards in the text window.
+    if len(cards) == 0:
         multi_line_cards = _extract_multiline_cards(text)
         for card in multi_line_cards:
             card_key = f"{card['number']}|{card['month']}|{card['year']}|{card['verification_value']}"
