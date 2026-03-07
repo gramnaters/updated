@@ -1858,6 +1858,7 @@ class BatchRunner:
                         logger.info(f"Sending {status} notification for card ending in {card.get('number', '')[-4:]}")
                         await update.effective_chat.send_message(
                             text=notify_text,
+                            parse_mode=ParseMode.HTML,
                             disable_web_page_preview=True
                         )
                         logger.info(f"✅ {status.title()} notification sent successfully")
@@ -2681,6 +2682,7 @@ class BatchRunner:
                         logger.info(f"Sending {status} notification for card ending in {card.get('number', '')[-4:]}")
                         await update.effective_chat.send_message(
                             text=notify_text,
+                            parse_mode=ParseMode.HTML,
                             disable_web_page_preview=True,
                         )
                         logger.info(f"✅ {status.title()} notification sent successfully")
@@ -2694,6 +2696,7 @@ class BatchRunner:
                                 await asyncio.sleep(retry_after)
                                 await update.effective_chat.send_message(
                                     text=result_notify_text(card, status, code_display, amount_display, site_label, display_name, receipt_id, user_id),
+                                    parse_mode=ParseMode.HTML,
                                     disable_web_page_preview=True,
                                 )
                                 logger.info(f"✅ {status.title()} notification sent after retry")
@@ -4243,9 +4246,10 @@ async def cmd_sh(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         
                         await update.effective_chat.send_message(
                             text=notify_text,
+                            parse_mode=ParseMode.HTML,
                             disable_web_page_preview=True
                         )
-                        
+
                         # Update ACTIVE_BATCHES
                         try:
                             async with ACTIVE_LOCK:
