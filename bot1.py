@@ -398,60 +398,79 @@ def result_notify_text(card: Dict, status: str, code_display: str, amount_displa
     mm_str = f"{mm:02d}"
     yy_str = f"{yy % 100:02d}"
 
+    # Status emojis matching original bot
     if status == "charged":
-        header = "🟢 CHARGED 💎"
+        status_emoji = "💎"
+        status_title = "CHARGED"
+        status_color = "🟢"
     elif status == "approved":
         code_upper = (code_display or "").upper()
-        if "ACTION_REQUIRED" in code_upper or "3D" in code_upper:
-            header = "🟡 APPROVED (3D) 🔐"
+        is_3d = "3D" in code_upper or "ACTION_REQUIRED" in code_upper
+        is_shopify = False
+        if isinstance(site_label, str) and site_label.strip():
+            site_lower = site_label.lower()
+            is_shopify = "shopify" in site_lower or "myshopify" in site_lower
+        if is_3d:
+            status_emoji = "🔐"
+            status_title = "APPROVED (3D)"
+        elif is_shopify:
+            status_emoji = "❎"
+            status_title = "APPROVED (Shopify)"
         else:
-            header = "🟢 APPROVED ✅"
+            status_emoji = "✅"
+            status_title = "APPROVED"
+        status_color = "🟡"
     elif status in ("captcha", "unknown"):
-        header = "⚠️ UNKNOWN"
+        status_emoji = "⚠️"
+        status_title = "UNKNOWN"
+        status_color = "🟠"
     else:
-        header = "❌ DECLINED"
+        status_emoji = "❌"
+        status_title = "DECLINED"
+        status_color = "🔴"
 
-    raw_mm = str(mm)
-    raw_yy = str(yy) if yy >= 2000 else str(yy + 2000)
-    card_line = f"{pan}|{raw_mm}|{raw_yy}|{cvv}"
+    card_line = f"{pan}|{mm_str}|{yy_str}|{cvv}"
 
-    bin_line = ""
-    country_line = ""
+    sep = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    parts = [
+        f"{status_color} <b>{status_title} {status_emoji}</b>",
+        sep,
+        f"💳 <b>Card:</b> <code>{card_line}</code>",
+    ]
+
+    # BIN and Country lookup
     try:
         import neww as checkout
         bin_str, country_str = checkout.get_bin_line(pan)
         if bin_str:
-            bin_line = bin_str.split("BIN: ", 1)[-1].strip()
+            parts.append(f"🏦 <b>BIN:</b> {bin_str.split('BIN: ', 1)[-1]}")
         if country_str:
-            country_line = country_str.split("Country: ", 1)[-1].strip()
+            parts.append(f"🌍 <b>Country:</b> {country_str.split('Country: ', 1)[-1]}")
     except Exception:
         pass
 
-    if status in ("captcha", "unknown"):
-        amt = "$0"
-    else:
-        amt = amount_display.strip() if isinstance(amount_display, str) and amount_display.strip() else "$0"
-
     if status == "charged":
-        code_line = "ProcessedReceipt"
+        parts.append(f"🔐 <b>Code:</b> <code>ProcessedReceipt</code>")
     else:
-        code_line = code_display or ""
+        parts.append(f"🔐 <b>Code:</b> <code>{code_display or ''}</code>")
 
-    site = site_label or ""
-    user_display = user_info or ""
+    if isinstance(site_label, str) and site_label.strip():
+        parts.append(f"🌐 <b>Site:</b> <code>{site_label.strip()}</code>")
 
-    sep = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    parts = [
-        header,
-        sep,
-        f"💳 Card: {card_line}",
-        f"🔐 Code: {code_line}",
-        f"🏦 BIN: {bin_line}" if bin_line else None,
-        f"🌍 Country: {country_line}" if country_line else None,
-        f"🌐 Site: {site}" if site else None,
-        f"💰 Amount: {amt}",
-        f"🧾 Receipt: {receipt_id}" if receipt_id else None,
-        f"👤 User: {user_display}" if user_display else None,
-        sep,
-    ]
-    return "\n".join(p for p in parts if p is not None)
+    if status in ("captcha", "unknown"):
+        parts.append(f"💰 <b>Amount:</b> <code>$0</code>")
+    elif isinstance(amount_display, str) and amount_display.strip():
+        parts.append(f"💰 <b>Amount:</b> <code>{amount_display.strip()}</code>")
+
+    if receipt_id and isinstance(receipt_id, str) and receipt_id.strip() and status in ("approved", "charged"):
+        parts.append(f"🧾 <b>Receipt:</b> <code>{receipt_id.strip()}</code>")
+
+    if isinstance(user_info, str) and user_info.strip():
+        if user_id:
+            user_link = f'<a href="tg://user?id={user_id}">{user_info.strip()}</a>'
+            parts.append(f"👤 <b>User:</b> {user_link}")
+        else:
+            parts.append(f"👤 <b>User:</b> <code>{user_info.strip()}</code>")
+
+    parts.append(sep)
+    return "\n".join(parts)
