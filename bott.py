@@ -4793,41 +4793,26 @@ async def cmd_st(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 country = card_info.get('country', 'Unknown')
                 display_brand = card_info.get('display_brand') or card_info.get('brand', 'Unknown')
                 funding = card_info.get('funding', 'Unknown')
-
+                
                 status = result.get('status', 'Unknown')
-
+                
                 logger.info(f"Status: {status}, Brand: {display_brand}, Country: {country}, Type: {funding}")
-
+                
                 user_id = update.effective_user.id
                 user_display_name = update.effective_user.full_name or update.effective_user.username or str(user_id)
                 user_link = f'<a href="tg://user?id={user_id}">{user_display_name}</a>'
-
-                # BIN/Country lookup
-                _st_bin_line = ""
-                _st_country_line = ""
-                try:
-                    _st_bin_str, _st_country_str = checkout.get_bin_line(card_details['number'])
-                    if _st_bin_str:
-                        _st_bin_line = _st_bin_str.split("BIN: ", 1)[-1].strip()
-                    if _st_country_str:
-                        _st_country_line = _st_country_str.split("Country: ", 1)[-1].strip()
-                except Exception:
-                    pass
-
-                _st_parts = [
-                    "🟢 APPROVED ✅",
-                    "______________________________",
-                    f"💳 Card: {card_details['number']}|{card_details['exp_month']}|{card_details['exp_year']}|{card_details['cvc']}",
-                ]
-                if _st_bin_line:
-                    _st_parts.append(f"🏦 BIN: {_st_bin_line}")
-                if _st_country_line:
-                    _st_parts.append(f"🌍 Country: {_st_country_line}")
-                _st_parts.append(f"🔑 Code: {status}")
-                _st_parts.append(f"💰 Amount: $0")
-                _st_parts.append(f"👤 User: {user_display_name}")
-                _st_parts.append(f"⚡ Gateway: Stripe Setup Intent")
-                response_text = "\n".join(_st_parts)
+                
+                response_text = (
+                    f"✅ Approved\n"
+                    f"Response: Card Added\n"
+                    f"Card: <code>{card_details['number']}|{card_details['exp_month']}|{card_details['exp_year']}|{card_details['cvc']}</code>\n"
+                    f"Status: {status}\n"
+                    f"Brand: {display_brand}\n"
+                    f"Country: {country}\n"
+                    f"Type: {funding}\n"
+                    f"User: {user_link}\n"
+                    f"Gateway: Stripe Setup Intent"
+                )
             else:
                 declined += 1
                 logger.warning(f"❌ CARD DECLINED")
@@ -4836,69 +4821,41 @@ async def cmd_st(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     error_code = error_info.get('code', 'Unknown')
                     decline_code = error_info.get('decline_code', 'N/A')
                     message = error_info.get('message', 'No message')
-
+                    
                     payment_method = error_info.get('payment_method', {})
                     card_info = payment_method.get('card', {})
                     country = card_info.get('country', 'Unknown')
                     display_brand = card_info.get('display_brand') or card_info.get('brand', 'Unknown')
                     funding = card_info.get('funding', 'Unknown')
-
+                    
                     logger.info(f"Error Code: {error_code}, Decline Code: {decline_code}, Message: {message}")
                     logger.info(f"Brand: {display_brand}, Country: {country}, Type: {funding}")
-
-                    # BIN/Country lookup for declined
-                    _st_dec_bin_line = ""
-                    _st_dec_country_line = ""
-                    try:
-                        _st_dec_bin_str, _st_dec_country_str = checkout.get_bin_line(card_details['number'])
-                        if _st_dec_bin_str:
-                            _st_dec_bin_line = _st_dec_bin_str.split("BIN: ", 1)[-1].strip()
-                        if _st_dec_country_str:
-                            _st_dec_country_line = _st_dec_country_str.split("Country: ", 1)[-1].strip()
-                    except Exception:
-                        pass
-
-                    _st_dec_code = decline_code if decline_code != 'N/A' else error_code
-                    _st_dec_parts = [
-                        "❌ DECLINED",
-                        f"{card_details['number']}|{card_details['exp_month']}|{card_details['exp_year']}|{card_details['cvc']}",
-                    ]
-                    if _st_dec_bin_line:
-                        _st_dec_parts.append(_st_dec_bin_line)
-                    if _st_dec_country_line:
-                        _st_dec_parts.append(_st_dec_country_line)
-                    _st_dec_parts.append(f"Code: {_st_dec_code}")
-                    _st_dec_parts.append(f"Amount: $0")
-                    response_text = "\n".join(_st_dec_parts)
+                    
+                    response_text = (
+                        f"❌ <b>Card Declined</b>\n\n"
+                        f"<b>Card:</b> <code>{card_details['number']}|{card_details['exp_month']}|{card_details['exp_year']}|{card_details['cvc']}</code>\n\n"
+                        f"<b>Error Code:</b> {error_code}\n"
+                        f"<b>Decline Code:</b> {decline_code}\n"
+                        f"<b>Message:</b> {message}\n"
+                        f"<b>Brand:</b> {display_brand}\n"
+                        f"<b>Country:</b> {country}\n"
+                        f"<b>Type:</b> {funding}\n"
+                        f"<b>User:</b> {username_display}\n"
+                        f"<b>Gateway:</b> Stripe Setup Intent"
+                    )
                 else:
                     logger.info(f"Error: {result}")
-                    # BIN/Country lookup for error declined
-                    _st_err_bin_line = ""
-                    _st_err_country_line = ""
-                    try:
-                        _st_err_bin_str, _st_err_country_str = checkout.get_bin_line(card_details['number'])
-                        if _st_err_bin_str:
-                            _st_err_bin_line = _st_err_bin_str.split("BIN: ", 1)[-1].strip()
-                        if _st_err_country_str:
-                            _st_err_country_line = _st_err_country_str.split("Country: ", 1)[-1].strip()
-                    except Exception:
-                        pass
-
-                    _st_err_parts = [
-                        "❌ DECLINED",
-                        f"{card_details['number']}|{card_details['exp_month']}|{card_details['exp_year']}|{card_details['cvc']}",
-                    ]
-                    if _st_err_bin_line:
-                        _st_err_parts.append(_st_err_bin_line)
-                    if _st_err_country_line:
-                        _st_err_parts.append(_st_err_country_line)
-                    _st_err_parts.append(f"Code: {result}")
-                    _st_err_parts.append(f"Amount: $0")
-                    response_text = "\n".join(_st_err_parts)
+                    response_text = (
+                        f"❌ <b>Card Declined</b>\n\n"
+                        f"<b>Card:</b> <code>{card_details['number']}|{card_details['exp_month']}|{card_details['exp_year']}|{card_details['cvc']}</code>\n\n"
+                        f"<b>Error:</b> {result}\n"
+                        f"<b>User:</b> {username_display}\n"
+                        f"<b>Gateway:</b> Stripe Setup Intent"
+                    )
             
-            await update.message.reply_text(response_text)
+            await update.message.reply_text(response_text, parse_mode=ParseMode.HTML)
             logger.info(f"Result sent to user")
-
+            
             # Rotate proxy for next card check
             old_proxy_index = proxy_index
             proxy_index = (proxy_index + 1) % len(user_proxies)
@@ -5296,41 +5253,16 @@ async def cmd_sc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.info(f"Status: {status}, Brand: {brand}, Country: {country}, Type: {funding}")
                 logger.info(f"Amount: {formatted_amount}")
                 
-                # BIN/Country lookup
-                _sc_bin_line = ""
-                _sc_country_line = ""
-                try:
-                    _sc_bin_str, _sc_country_str = checkout.get_bin_line(card_details['number'])
-                    if _sc_bin_str:
-                        _sc_bin_line = _sc_bin_str.split("BIN: ", 1)[-1].strip()
-                    if _sc_country_str:
-                        _sc_country_line = _sc_country_str.split("Country: ", 1)[-1].strip()
-                except Exception:
-                    pass
-
-                _reason_upper = (reason or "").upper()
-                if "SUCCESS" in _reason_upper or status == "succeeded":
-                    _sc_header = "🟢 CHARGED 💎"
-                elif "ACTION_REQUIRED" in _reason_upper or "3D" in _reason_upper:
-                    _sc_header = "🟡 APPROVED (3D) 🔐"
-                else:
-                    _sc_header = "🟢 APPROVED ✅"
-
-                user_display_name = update.effective_user.full_name or update.effective_user.username or str(user_id)
-                _sc_parts = [
-                    _sc_header,
-                    "______________________________",
-                    f"💳 Card: {card_details['number']}|{card_details['exp_month']}|{card_details['exp_year']}|{card_details['cvc']}",
-                ]
-                if _sc_bin_line:
-                    _sc_parts.append(f"🏦 BIN: {_sc_bin_line}")
-                if _sc_country_line:
-                    _sc_parts.append(f"🌍 Country: {_sc_country_line}")
-                _sc_parts.append(f"🔑 Code: {reason}")
-                _sc_parts.append(f"💰 Amount: {formatted_amount}")
-                _sc_parts.append(f"👤 User: {user_display_name}")
-                _sc_parts.append(f"⚡ Gateway: Stripe Payment Intent")
-                response_text = "\n".join(_sc_parts)
+                response_text = (
+                    f"<b>UID:</b> {uid}\n"
+                    f"<b>Intent:</b> {payment_intent_id}\n\n"
+                    f"✅ <b>Card Approved</b>\n\n"
+                    f"<b>Card:</b> <code>{card_details['number']}|{card_details['exp_month']}|{card_details['exp_year']}|{card_details['cvc']}</code>\n\n"
+                    f"<b>Reason:</b> {reason}\n"
+                    f"<b>Amount:</b> {formatted_amount}\n"
+                    f"<b>User:</b> {username_display}\n"
+                    f"<b>Gateway:</b> Stripe Payment Intent"
+                )
             else:
                 declined += 1
                 logger.warning(f"❌ CARD DECLINED")
@@ -5374,34 +5306,26 @@ async def cmd_sc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.info(f"Brand: {dec_brand}, Country: {dec_country}, Type: {dec_funding}")
                 logger.info(f"Amount: {formatted_amount}")
                 
-                # BIN/Country lookup for declined
-                _sc_dec_bin_line = ""
-                _sc_dec_country_line = ""
-                try:
-                    _sc_dec_bin_str, _sc_dec_country_str = checkout.get_bin_line(card_details['number'])
-                    if _sc_dec_bin_str:
-                        _sc_dec_bin_line = _sc_dec_bin_str.split("BIN: ", 1)[-1].strip()
-                    if _sc_dec_country_str:
-                        _sc_dec_country_line = _sc_dec_country_str.split("Country: ", 1)[-1].strip()
-                except Exception:
-                    pass
-
-                _sc_dec_code = decline_code if decline_code != 'N/A' else error_code
-                _sc_dec_parts = [
-                    "❌ DECLINED",
-                    f"{card_details['number']}|{card_details['exp_month']}|{card_details['exp_year']}|{card_details['cvc']}",
-                ]
-                if _sc_dec_bin_line:
-                    _sc_dec_parts.append(_sc_dec_bin_line)
-                if _sc_dec_country_line:
-                    _sc_dec_parts.append(_sc_dec_country_line)
-                _sc_dec_parts.append(f"Code: {_sc_dec_code}")
-                _sc_dec_parts.append(f"Amount: {formatted_amount}")
-                response_text = "\n".join(_sc_dec_parts)
+                response_text = (
+                    f"<b>UID:</b> {uid}\n"
+                    f"<b>Intent:</b> {payment_intent_id}\n\n"
+                    f"❌ <b>Card Declined</b>\n\n"
+                    f"<b>Card:</b> <code>{card_details['number']}|{card_details['exp_month']}|{card_details['exp_year']}|{card_details['cvc']}</code>\n\n"
+                    f"<b>Reason:</b> {reason}\n"
+                    f"<b>Error Code:</b> {error_code}\n"
+                    f"<b>Decline Code:</b> {decline_code}\n"
+                    f"<b>Message:</b> {message}\n"
+                    f"<b>Brand:</b> {dec_brand}\n"
+                    f"<b>Country:</b> {dec_country}\n"
+                    f"<b>Type:</b> {dec_funding}\n"
+                    f"<b>Amount:</b> {formatted_amount}\n"
+                    f"<b>User:</b> {username_display}\n"
+                    f"<b>Gateway:</b> Stripe Payment Intent"
+                )
             
-            await update.message.reply_text(response_text)
+            await update.message.reply_text(response_text, parse_mode=ParseMode.HTML)
             logger.info(f"Result sent to user")
-
+            
         except Exception as e:
             declined += 1
             logger.exception("Error checking card in cmd_sc")

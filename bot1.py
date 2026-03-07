@@ -440,28 +440,16 @@ def result_notify_text(card: Dict, status: str, code_display: str, amount_displa
     site = site_label or ""
     user_display = user_info or ""
 
-    if status in ("approved", "charged"):
-        parts = [
-            header,
-            "______________________________",
-            f"💳 Card: {card_line}",
-            f"🏦 BIN: {bin_line}" if bin_line else None,
-            f"🌍 Country: {country_line}" if country_line else None,
-            f"🔑 Code: {code_line}",
-            f"🏪 Site: {site}" if site else None,
-            f"💰 Amount: {amt}",
-            f"🧾 Receipt: {receipt_id}" if receipt_id else None,
-            f"👤 User: {user_display}" if user_display else None,
-        ]
-        return "\n".join(p for p in parts if p is not None)
-    else:
-        parts = [header, card_line]
-        if bin_line:
-            parts.append(bin_line)
-        if country_line:
-            parts.append(country_line)
-        parts.append(f"Code: {code_line}")
-        parts.append(f"Amount: {amt}")
-        if receipt_id:
-            parts.append(f"Receipt: {receipt_id}")
-        return "\n".join(parts)
+    parts = [
+        header,
+        "______________________________",
+        f"💳 Card: {card_line}",
+        f"🏦 BIN: {bin_line}" if bin_line else None,
+        f"🌍 Country: {country_line}" if country_line else None,
+        f"🔑 Code: {code_line}",
+        f"🏪 Site: {site}" if site else None,
+        f"💰 Amount: {amt}",
+        f"🧾 Receipt: {receipt_id}" if receipt_id else None,
+        f"👤 User: {user_display}" if user_display else None,
+    ]
+    return "\n".join(p for p in parts if p is not None)
